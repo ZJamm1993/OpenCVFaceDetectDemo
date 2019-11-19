@@ -30,14 +30,14 @@ def DrawCartoonEyes(src, landmarks):
     # 36, 39, 42, 45 if 68 marks
     # 2, 3, 1, 0 if 5 marks
     eyeimg = cv2.imread('face/eye.png', cv2.IMREAD_UNCHANGED)
-    eyesPoints = [[landmarks[2], landmarks[3]], 
-                    [landmarks[1], landmarks[0]]]
+    eyesPoints = [[landmarks[36], landmarks[39]], 
+                    [landmarks[42], landmarks[45]]]
     for (p1, p2) in eyesPoints:
         x1, y1 = p1
         x2, y2 = p2
         centerx = (x1 + x2) / 2
         centery = (y1 + y2) / 2
-        diameter = int(math.hypot(x1 - x2, y1 - y2) * 1.2)
+        diameter = int(math.hypot(x1 - x2, y1 - y2) * 2)
         eyecopy = cv2.resize(eyeimg, (diameter, diameter))
         roix = centerx - (diameter / 2)
         roiy = centery - (diameter / 2)
@@ -49,6 +49,7 @@ def DrawCartoonEyes(src, landmarks):
 
 detector = dlib.get_frontal_face_detector()
 modelpath = 'model/shape_predictor_5_face_landmarks.dat' 
+modelpath = '../shape_predictor_68_face_landmarks.dat'
 predictor = dlib.shape_predictor(modelpath)
 
 vs = VideoStream(src=0).start()
@@ -76,7 +77,7 @@ while True:
 
             shape = predictor(gray, rect)
             shape = face_utils.shape_to_np(shape)
-            # DrawLandmarks(frame, shape)
+            DrawLandmarks(frame, shape)
             DrawCartoonEyes(frame, shape)
 
     cv2.imshow("Frame", frame)
