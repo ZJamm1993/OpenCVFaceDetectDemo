@@ -44,8 +44,8 @@ def DrawCartoonEyes(src, landmarks):
         srcroi = src[roiy:roiy + diameter, roix: roix + diameter]
         eyecolor = eyecopy[:, :, :3]
         eyealpha = eyecopy[:, :, 3]
-        where1, where2 = np.where(eyealpha > 0)
-        srcroi[where1, where2] = eyecolor[where1, where2]
+        wherr = np.where(eyealpha > 0)
+        srcroi[wherr] = eyecolor[wherr]
 
 detector = dlib.get_frontal_face_detector()
 modelpath = 'model/shape_predictor_5_face_landmarks.dat' 
