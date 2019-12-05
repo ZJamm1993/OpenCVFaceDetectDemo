@@ -12,6 +12,15 @@ def RectContainsPoint(rect, point):
     px, py = point
     return px >= x and px < x + w and py >= y and py < y + h
 
+def AlphaBlending(fgImg, bgImg, alphaMask):
+    fgImg = fgImg.astype(np.float)
+    bgImg = bgImg.astype(np.float)
+    alphaMask = alphaMask.astype(np.float)
+    fg = cv2.multiply(alphaMask, fgImg)
+    bg = cv2.multiply(1.0 - alphaMask, bgImg)
+    mix = cv2.add(fg, bg)
+    return mix
+
 def DrawLandmarks(src, landmarks):
     boundheight, boundwidth = src.shape[:2]
     bounds = (0, 0, boundwidth, boundheight)
@@ -35,17 +44,23 @@ def DrawCartoonEyes(src, landmarks):
     for (p1, p2) in eyesPoints:
         x1, y1 = p1
         x2, y2 = p2
+        # 计算ROI区域
         centerx = (x1 + x2) / 2
         centery = (y1 + y2) / 2
         diameter = int(math.hypot(x1 - x2, y1 - y2) * 2)
-        eyecopy = cv2.resize(eyeimg, (diameter, diameter))
         roix = centerx - (diameter / 2)
         roiy = centery - (diameter / 2)
+        # 前景图缩放至ROI大小
+        eyecopy = cv2.resize(eyeimg, (diameter, diameter)).astype(np.float)
         srcroi = src[roiy:roiy + diameter, roix: roix + diameter]
         eyecolor = eyecopy[:, :, :3]
-        eyealpha = eyecopy[:, :, 3]
-        wherr = np.where(eyealpha > 0)
-        srcroi[wherr] = eyecolor[wherr]
+        eyechannel3 = eyecopy[:, :, 3] / 255.0
+        eyealpha3 = np.zeros((diameter, diameter, 3))
+        eyealpha3[:, :, 0] = eyechannel3
+        eyealpha3[:, :, 1] = eyechannel3
+        eyealpha3[:, :, 2] = eyechannel3
+        mix = AlphaBlending(eyecolor, srcroi, eyealpha3)
+        srcroi[:,:] = mix[:,:]
 
 detector = dlib.get_frontal_face_detector()
 modelpath = 'model/shape_predictor_5_face_landmarks.dat' 
@@ -77,7 +92,7 @@ while True:
 
             shape = predictor(gray, rect)
             shape = face_utils.shape_to_np(shape)
-            DrawLandmarks(frame, shape)
+            # DrawLandmarks(frame, shape)
             DrawCartoonEyes(frame, shape)
 
     cv2.imshow("Frame", frame)
