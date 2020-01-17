@@ -10,8 +10,35 @@ modelpath = '../shape_predictor_68_face_landmarks.dat'
 predictor = dlib.shape_predictor(modelpath)
 print('inited face detector')
 
-def faceLandmarks(src):
-    points = []
+
+def DrawLandmarks(src, landmarks):
+    boundheight, boundwidth = src.shape[:2]
+    bounds = (0, 0, boundwidth, boundheight)
+    for (i, (x, y)) in enumerate(landmarks):
+        cv2.circle(src, (x, y), 1, (255, 255, 0), 2)
+        cv2.putText(src, str(i), (x - 10, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255,255,0), 1)
+    return src
+
+def DistancePoints(obj0, obj1):
+    size = obj0.shape[0]
+    tota = 0
+    for i in range(size):
+        tota += np.square(obj0[i] - obj1[i])
+    res = np.sqrt(tota)
+    return res
+
+def AlphaBlending(fgImg, bgImg, alphaMask):
+    fgImg = fgImg.astype(np.float)
+    bgImg = bgImg.astype(np.float)
+    alphaMask = alphaMask.astype(np.float) / 255.0
+    fg = cv2.multiply(alphaMask, fgImg)
+    bg = cv2.multiply(1.0 - alphaMask, bgImg)
+    mix = cv2.add(fg, bg)
+    mix = mix.astype(np.uint8)
+    return mix
+
+def facesLandmarks(src):
+    faces = []
     # 人脸特征点由dlib给出
     gray = src
     if len(gray.shape) == 3:
@@ -21,10 +48,8 @@ def faceLandmarks(src):
     if len(rects) > 0:
         shape = predictor(gray, rects[0])
         shape = face_utils.shape_to_np(shape)
-        for p in shape:
-            x, y = p
-            points.append((x, y))
-    return points
+        faces.append(shape)
+    return faces
 
 def delaunayTriangleIndexes(bounds, points):
     # 求三角分割，只能用其中一组点！！
