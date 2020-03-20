@@ -7,6 +7,7 @@ import cv2
 import sys
 import json
 import zzimgtool
+import faceswap
 
 def morphImgs(obj1, obj2, alpha):
     img1, points1 = obj1
@@ -16,7 +17,8 @@ def morphImgs(obj1, obj2, alpha):
     for i in range(0, len(points1)):
         x = (1 - alpha) * points1[i][0] + alpha * points2[i][0]
         y = (1 - alpha) * points1[i][1] + alpha * points2[i][1]
-        points.append((int(x),int(y)))
+        p = (int(x),int(y))
+        points.append(p)
 
     # 绘制结果
     imgMorph1 = zzimgtool.warpImage(img1, points1, points)
@@ -57,9 +59,11 @@ def testAnimalFaceMorph():
     '''
     
     # 用人脸于动物脸融合
-    animalname = 'lion'
-    img1 = cv2.imread('animal/{}.jpg'.format(animalname))
-    img2 = cv2.imread('/Users/zjj/Desktop/test.jpg')
+    # animalname = 'lion'
+    # img1 = cv2.imread('animal/{}.jpg'.format(animalname))
+    img1 = cv2.imread('face/baby/baby6.png')
+    img2 = cv2.imread('face/testface3.jpg')
+    # img1 = faceswap.swapfaceimg(img1, img2)
 
     sizeWidth = 400
     sizeHeight = 400
@@ -67,9 +71,9 @@ def testAnimalFaceMorph():
     img2 = cv2.resize(img2, (sizeWidth, sizeHeight))
 
     # 动物脸特征点由文件给出
-    points1 = pointsFromImageJSON(img1, 'animal/{}.json'.format(animalname))
+    points1 = zzimgtool.facesLandmarks(img1)[0].tolist() # pointsFromImageJSON(img1, 'animal/{}.json'.format(animalname))
     # 人脸特征点由dlib给出
-    points2 = zzimgtool.faceLandmarks(img2)
+    points2 = zzimgtool.facesLandmarks(img2)[0].tolist()
     
     if len(points2) == 0:
         print('no face found in image 2')
@@ -104,6 +108,8 @@ def testAnimalFaceMorph():
 
     # 脸1渐变脸2
     results = []
+    for _ in range(10):
+        results.append(img2)
     rang = range(0, 101, 2)
     for alpha in rang:
         alpha = float(alpha) / 100.0
@@ -115,7 +121,9 @@ def testAnimalFaceMorph():
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             exit()
-    waitTime = len(results) * 1000 / 30
+    
+    for _ in range(10):
+        results.append(img1)
     while(True):
         for img in results:
             cv2.imshow("Morphed Face", img)

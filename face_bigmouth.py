@@ -9,7 +9,7 @@ import math
 import zzimgtool
 
 def handleFrameShape(frame, shape):
-    # zzimgtool.DrawLandmarks(frame, shape)
+    zzimgtool.DrawLandmarks(frame, shape)
     # return frame
     outerlipspoint = shape[48:60]
     height, width = frame.shape[0:2]
@@ -73,8 +73,9 @@ while True:
     if originframe is None:
         break
     
-    originframe = imutils.resize(originframe, width = 600)
-    originframe = np.fliplr(originframe)
+    # originframe = imutils.resize(originframe, width = 600)
+    # originframe = np.fliplr(originframe)
+    originframe = cv2.imread('face/testface2.jpg')
 
     # progress
     frame = originframe.copy()

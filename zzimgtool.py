@@ -56,7 +56,8 @@ def delaunayTriangleIndexes(bounds, points):
     subdv = cv2.Subdiv2D(bounds)
     enumPoints = points
     for p in enumPoints:
-        subdv.insert(p)
+        x, y = p
+        subdv.insert((x, y))
     trianglepoints = subdv.getTriangleList()
     # 将三角形点坐标转化为三角形点索引
     triangleindexes = []
