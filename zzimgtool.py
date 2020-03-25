@@ -4,12 +4,90 @@ import cv2
 from imutils import face_utils
 import imutils
 import dlib
+import math
 
 detector = dlib.get_frontal_face_detector()
 modelpath = '../shape_predictor_68_face_landmarks.dat'
 predictor = dlib.shape_predictor(modelpath)
 print('inited face detector')
 
+def Movepointstotarget(pois, target, rate, toX = True, toY = True, keepSize = False):
+    tos = [toX, toY]
+    count = pois.shape[0]
+    if target is None:
+        total0 = 0
+        total1 = 0
+        for p in pois:
+            total0 += p[0]
+            total1 += p[1]
+        if count > 0:
+            target = [total0 / count, total1 / count]
+    if keepSize:
+        avgdis = [0, 0]
+        for p in pois:
+            for i in range(2):
+                d = target[i] - p[i]
+                avgdis[i] += d
+        for i in range(2):
+            avgdis[i] = int(float(avgdis[i]) / count)
+
+    for p in pois:
+        for i in range(2):
+            toi = tos[i]
+            if toi == True:
+                dist = float(avgdis[i]) if keepSize else float(target[i] - p[i])
+                di = dist * rate
+                p[i] = int(float(p[i]) + di)
+
+def Movepointstoaverage(pois):
+    count = pois.shape[0]
+    tempois = pois.copy()
+    for i in range(count):
+        if i == 0 or i == count - 1:
+            continue
+        curr = tempois[i]
+        last = pois[i - 1]
+        next = pois[i + 1]
+        curr[0] = (last[0] + next[0]) / 2
+        curr[1] = (last[1] + next[1]) / 2
+    pois[:] = tempois[:]
+
+def Addpointsatcorners(pois, width, height):
+    pois = pois.tolist()
+    cut = 1
+    height -= cut
+    width -= cut
+    cut = 0
+    # add corners
+    pois.append((cut, cut))
+    pois.append((width, height))
+    pois.append((cut, height))
+    pois.append((width, cut))
+    # add edge center
+    pois.append((cut, height / 2))
+    pois.append((width, height / 2))
+    pois.append((width / 2, cut))
+    pois.append((width / 2, height))
+    return np.array(pois)
+
+def USM(src, radius = 15, sigma = 3, val = 1.5):
+    blur = cv2.GaussianBlur(src, (radius, radius), sigma)
+    res = cv2.addWeighted(src, val, blur, 1.0 - val, 0)
+    return res
+
+def ScreenBlend(base, mix):
+    A = base.astype(np.float)
+    B = mix.astype(np.float)
+    screen = 255 - (255 - A) * (255 - B) / 255
+    screen = screen.astype(np.uint8)
+    return screen
+
+def distance2points(p1, p2):
+    d0 = p1[0] - p2[0]
+    d1 = p1[1] - p2[1]
+    ad = d0 * d0 + d1 * d1
+    res = math.sqrt(ad)
+    return res
 
 def DrawLandmarks(src, landmarks):
     boundheight, boundwidth = src.shape[:2]
@@ -116,7 +194,9 @@ def warpTriangleROI(src, triangleSrc, dst, triangleDst):
 
 def warpImage(src, srcpoints, dstpoints):
     # 空白结果
-    imgWarp = np.zeros(src.shape, dtype = src.dtype)
+    # imgWarp = np.zeros(src.shape, dtype = src.dtype)
+    imgWarp = np.ones(src.shape, dtype = src.dtype)
+    # 黑底和白底有不一样吗？
 
     boundheight, boundwidth = src.shape[:2]
     bounds = (0, 0, boundwidth, boundheight)
@@ -126,6 +206,13 @@ def warpImage(src, srcpoints, dstpoints):
     for x, y, z in triangleindexes:
         trianglesrc = [srcpoints[x], srcpoints[y], srcpoints[z]]
         triangledst = [dstpoints[x], dstpoints[y], dstpoints[z]]
+        # isallsame = True # 如果全部点都一样，跳过这组三角形不做了
+        # for p1, p2 in zip(trianglesrc, triangledst):
+        #     if p1[0] != p2[0] and p1[1] != p2[1]:
+        #         isallsame = False
+        #         break
+        # if isallsame:
+        #     continue
         # Morph one triangle at a time.
         warpTriangleROI(src, trianglesrc, imgWarp, triangledst)
     return imgWarp
